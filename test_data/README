@@ -1,0 +1,13 @@
+### Test Data
+Test datasets and keys used for the WP2 demomstrator
+
+- Pair of curve25519-based keys for the two actors involved in the flow
+    - FEGA node: initial data storage
+    - User: data owner
+    - Compute node: Galaxy compute backend where Galaxy Tools are going to executed
+
+- Lorem-ipsum Dataset
+    - data.txt: Plain Lorem-ipsum dataset
+    - data-fega.c4gh: encrypted Lorem-ipsum dataset as imported from FEGA
+        - `crypt4gh encrypt --sk fega.priv --recipient_pk user_key.pub < data.txt > data-fega.c4gh`
+    - 
