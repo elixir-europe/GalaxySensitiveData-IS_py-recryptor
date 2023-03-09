@@ -17,6 +17,7 @@
 
 import argparse
 import crypt4gh
+import sys
 
 def main():
     ap = argparse.ArgumentParser(
@@ -24,13 +25,6 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     
-    ap.add_argument(
-        "-i",
-        "--input",
-        dest="input_file",
-        required=True,
-        help="The encrypted input file"
-    )
     sp = ap.add_subparsers(
         dest="operation",
         title="operations",
@@ -42,10 +36,11 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Re-encryption params",
     )
+    
     ap_r.add_argument(
         "--encryption-key",
         dest="key_file",
-        help="The file with the key to generate the reencrypted header"
+        help="The file with the key to reencrypt the header"
     )
     
     ap_d = sp.add_parser(
@@ -66,14 +61,29 @@ def main():
         help="crypt4gh get header params",
     )
     
-    ap.add_argument(
-        "-o",
-        "--output",
-        dest="output_file",
-        required=True,
-        help="The output file. Depending on the operation, it can be the reencrypted header, the decrypted contents of the input file or the crypt4gh header from the input file"
-    )
-    
+    for ap_ in (ap_r, ap_d, ap_g):
+        ap_.add_argument(
+            "-i",
+            "--input",
+            dest="input_file",
+            required=True,
+            help="The encrypted input file",
+        )
+        
+        ap_.add_argument(
+            "-o",
+            "--output",
+            dest="output_file",
+            required=True,
+            help="The output file. Depending on the operation, it can be the reencrypted header, the decrypted contents of the input file or the crypt4gh header from the input file",
+        )
+        
+    for ap_ in (ap_r, ap_d):
+        ap_.add_argument(
+            "--decryption-key",
+            dest="key_file",
+            help="The file with the key to open the encrypted header"
+        )
     
     ap.add_argument(
         "--full-help",
@@ -86,7 +96,7 @@ def main():
     args = ap.parse_args()
 
     fullHelp = args.fullHelp
-    if args.command is None:
+    if args.operation is None:
         fullHelp = True
 
     if fullHelp:
@@ -107,6 +117,13 @@ def main():
                 print(subparser.format_help())
 
         sys.exit(0)
+    
+    if args.operation == "decrypt":
+        pass
+    elif args.operation == "recrypt":
+        pass
+    elif args.operation == "get-header":
+        pass
     
 
 if __name__ == "__main__":
