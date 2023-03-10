@@ -21,7 +21,7 @@ import sys
 from .operations import (
     do_decrypt_payload,
     do_recrypt_header,
-    do_save_header,
+    do_save_header_and_payload,
 )
 
 def main():
@@ -44,8 +44,10 @@ def main():
     
     ap_r.add_argument(
         "--encryption-key",
-        dest="key_file",
-        help="The file with the key to reencrypt the header"
+        dest="encryption_keys",
+        action="append",
+        required=True,
+        help="The file(s) with the key(s) to reencrypt the header"
     )
     
     ap_d = sp.add_parser(
@@ -64,6 +66,12 @@ def main():
         "get-header",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="crypt4gh get header params",
+    )
+    
+    ap_g.add_argument(
+        "--payload",
+        dest="payload_file",
+        help="The optional payload output file, where only the payload is saved",
     )
     
     for ap_ in (ap_r, ap_d, ap_g):
@@ -86,7 +94,8 @@ def main():
     for ap_ in (ap_r, ap_d):
         ap_.add_argument(
             "--decryption-key",
-            dest="key_file",
+            dest="decryption_key",
+            required=True,
             help="The file with the key to open the encrypted header"
         )
     
@@ -127,9 +136,9 @@ def main():
     if args.operation == "decrypt":
         retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file)
     elif args.operation == "recrypt":
-        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_key, args.output_file)
+        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file)
     elif args.operation == "get-header":
-        retval = do_save_header(args.input_file, args.output_file)
+        retval = do_save_header_and_payload(args.input_file, args.output_file, args.payload_file)
     
     sys.exit(retval)
     
