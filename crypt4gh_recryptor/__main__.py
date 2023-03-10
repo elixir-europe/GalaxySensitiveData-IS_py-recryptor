@@ -16,8 +16,13 @@
 # limitations under the License.
 
 import argparse
-import crypt4gh
 import sys
+
+from .operations import (
+    do_decrypt_payload,
+    do_recrypt_header,
+    do_save_header,
+)
 
 def main():
     ap = argparse.ArgumentParser(
@@ -67,7 +72,7 @@ def main():
             "--input",
             dest="input_file",
             required=True,
-            help="The encrypted input file",
+            help="The encrypted input file (or only its header)",
         )
         
         ap_.add_argument(
@@ -113,17 +118,20 @@ def main():
         for subparsers_action in subparsers_actions:
             # get all subparsers and print help
             for choice, subparser in subparsers_action.choices.items():
-                print("Subparser '{}'".format(choice))
+                print("Operation '{}'".format(choice))
                 print(subparser.format_help())
 
         sys.exit(0)
     
+    retval = 1
     if args.operation == "decrypt":
-        pass
+        retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file)
     elif args.operation == "recrypt":
-        pass
+        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_key, args.output_file)
     elif args.operation == "get-header":
-        pass
+        retval = do_save_header(args.input_file, args.output_file)
+    
+    sys.exit(retval)
     
 
 if __name__ == "__main__":
