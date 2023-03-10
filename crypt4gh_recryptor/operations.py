@@ -17,11 +17,13 @@
 
 import inspect
 import io
+import shutil
 import sys
 import logging
 
 import crypt4gh.header
 import crypt4gh.keys
+import crypt4gh.lib
 
 class MultiStreamReader(io.RawIOBase):
     '''
@@ -46,11 +48,20 @@ class MultiStreamReader(io.RawIOBase):
         
         # Fast path
         numread = 0
-        for instream in self._instreams:
-            partial_numread = instream.readinto(b)
+        for i_in, instream in enumerate(self._instreams):
+            partial_bytes = instream.read(len(b)-numread)
             # TODO: should we raise an error in non blocking cases?
-            if partial_numread is not None:
+            if partial_bytes is not None:
+                partial_numread = len(partial_bytes)
+                b[numread:numread+partial_numread] = partial_bytes
                 numread += partial_numread
+                if numread == len(b):
+                    break
+        
+        # This one is for next read
+        if i_in > 0:
+            self._instreams = self._instreams[i_in:]
+        
         return numread
     
     def write(self, b):
@@ -149,22 +160,20 @@ def do_decrypt_payload(payload_file: "str", header_file: "str", decryption_key_f
 def do_recrypt_header(input_file: "str", decryption_key_file: "str", encryption_key_files: "Sequence[str]", output_file: "str", decryption_passphrase: "Optional[str]" = None) -> "int":
     try:
         decryption_key = crypt4gh.keys.get_private_key(decryption_key_file, lambda: decryption_passphrase)
+        private_key = [(0, decryption_key, None)]
     except:
         logger.exception(f"Unable to read decryption key from {decryption_key_file}")
         return 1
     
     try:
-        encryption_keys = list(map(lambda encryption_key_file: crypt4gh.keys.get_public_key(encryption_key_file), encryption_key_files))
+        encryption_keys = list(map(lambda encryption_key_file: (0, decryption_key, crypt4gh.keys.get_public_key(encryption_key_file)), encryption_key_files))
     except:
         logger.exception(f"Unable to read encryption keys from {' '.join(encryption_key_files)}")
         return 2
     
     try:
         with open(input_file, mode="rb") as istream:
-            # This one is going to be discarded
-            orig_header_packets = crypt4gh.header.parse(istream)
-            
-            header_packets = do_recrypt_stream(istream, [decryption_key], encryption_keys)
+            header_packets = do_recrypt_stream(istream, private_key, encryption_keys)
     except:
         logger.exception(f"Unable to read header from {input_file} in order to reencrypt it")
         return 3
@@ -184,10 +193,13 @@ def do_recrypt_stream(istream: "IO[bytes]", decryption_keys: "Sequence[Any]", en
     
     return crypt4gh.header.reencrypt(header_packets, decryption_keys, encryption_keys, trim=False)
 
-def do_save_header(input_file: "str", output_file: "str") -> "int":
+def do_save_header_and_payload(input_file: "str", output_file: "str", payload_file: "Optional[str]" = None) -> "int":
     try:
         with open(input_file, mode="rb") as iH, open(output_file, mode="wb") as oH:
             do_save_header_stream(iH, oH)
+            if payload_file is not None:
+                with open(payload_file, mode="wb") as pH:
+                    shutil.copyfileobj(iH, pH)
     except:
         logger.exception(f"Unable to extract header from {input_file} or to save it in {output_file}")
         return 5
