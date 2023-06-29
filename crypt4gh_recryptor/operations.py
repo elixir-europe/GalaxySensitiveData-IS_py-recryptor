@@ -138,7 +138,8 @@ def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryp
             if skip_header:
                 logger.info(f"Skipping header of {payload_file}")
                 # This one is going to be discarded
-
+                for _ in crypt4gh.header.parse(pstream):
+                    pass
             istream = MultiStreamReader(hstream, pstream)
         else:
             istream = open(payload_file, mode="rb")
