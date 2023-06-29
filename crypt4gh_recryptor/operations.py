@@ -115,7 +115,7 @@ class MultiStreamReader(io.RawIOBase):
 
 logger = logging.getLogger(__name__)
 
-def do_decrypt_payload(payload_file: "str", header_file: "str", decryption_key_file: "str", output_file: "str", sender_key_file: "Optional[str]" = None, skip_header: "bool" = False, decryption_passphrase: "Optional[str]" = None) -> "int":
+def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryption_key_file: "str", output_file: "str", sender_key_file: "Optional[str]" = None, skip_header: "bool" = False, decryption_passphrase: "Optional[str]" = None) -> "int":
     try:
         decryption_key = crypt4gh.keys.get_private_key(decryption_key_file, lambda: decryption_passphrase)
     except:
@@ -132,12 +132,16 @@ def do_decrypt_payload(payload_file: "str", header_file: "str", decryption_key_f
         sender_pub_key = None
     
     try:
-        hstream = open(header_file, mode="rb")
-        pstream = open(payload_file, mode="rb")
-        if skip_header:
-            # This one is going to be discarded
-            _ = crypt4gh.header.parse(pstream)
-        istream = MultiStreamReader(hstream, pstream)
+        if header_file:
+            hstream = open(header_file, mode="rb")
+            pstream = open(payload_file, mode="rb")
+            if skip_header:
+                logger.info(f"Skipping header of {payload_file}")
+                # This one is going to be discarded
+
+            istream = MultiStreamReader(hstream, pstream)
+        else:
+            istream = open(payload_file, mode="rb")
     except:
         logger.exception(f"Unable to open either header from {header_file} or payload from {payload_file} in order to decrypt the latter")
         return 3
