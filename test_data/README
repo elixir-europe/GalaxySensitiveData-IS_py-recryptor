@@ -1,5 +1,5 @@
 ### Test Data
-Test datasets and keys used for the WP2 demomstrator
+Test datasets and keys used for the WP2 demonstrator
 
 - Pair of curve25519-based keys for the two actors involved in the flow
     - FEGA node: initial data storage

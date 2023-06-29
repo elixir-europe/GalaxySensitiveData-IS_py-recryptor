@@ -58,8 +58,9 @@ def main():
     ap_d.add_argument(
         "--header",
         dest="header_file",
-        required=True,
-        help="The alternate header file to be used to decrypt"
+        default=None,
+        help="An optional alternate header file to be used to decrypt. If defined, the header of the encrypted input "
+             "file will be ignored"
     )
     
     ap_g = sp.add_parser(
@@ -134,7 +135,8 @@ def main():
     
     retval = 1
     if args.operation == "decrypt":
-        retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file)
+        retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file,
+                                    skip_header=args.header_file is not None)
     elif args.operation == "recrypt":
         retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file)
     elif args.operation == "get-header":
