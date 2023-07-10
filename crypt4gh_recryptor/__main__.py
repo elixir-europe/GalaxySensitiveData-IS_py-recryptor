@@ -93,8 +93,9 @@ def main():
     ap_d.add_argument(
         "--header",
         dest="header_file",
-        required=True,
-        help="The alternate header file to be used to decrypt"
+        default=None,
+        help="An optional alternate header file to be used to decrypt. If defined, the header of the encrypted input "
+             "file will be ignored"
     )
     
     ap_g = sp.add_parser(

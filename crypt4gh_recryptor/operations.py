@@ -116,11 +116,11 @@ class MultiStreamReader(io.RawIOBase):
 
 logger = logging.getLogger(__name__)
 
-def do_generate_keypair(private_key: str, public_key: str,
-                        passphrase: Optional[str], comment: Optional[str]):
-    print(private_key, public_key)
+def do_generate_keypair(private_key: "str", public_key: "str",
+                        passphrase: "Optional[str]", comment: "Optional[str]") -> "int":
+    #print(private_key, public_key)
 
-    def monkeypatched_getpass(prompt: str) -> str:
+    def monkeypatched_getpass(prompt: "str") -> "str":
         return passphrase if passphrase else ''
 
     crypt4gh.keys.getpass = monkeypatched_getpass
@@ -130,6 +130,8 @@ def do_generate_keypair(private_key: str, public_key: str,
     if ret_code:
         logger.exception(f"Unable to generate keypair. Return code from crypt4gh library: {ret_code}")
         return 1
+    
+    return 0
 
 def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryption_key_file: "str", output_file: "str", sender_key_file: "Optional[str]" = None, skip_header: "bool" = False, decryption_passphrase: "Optional[str]" = None) -> "int":
     try:
@@ -148,12 +150,17 @@ def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryp
         sender_pub_key = None
     
     try:
-        hstream = open(header_file, mode="rb")
-        pstream = open(payload_file, mode="rb")
-        if skip_header:
-            # This one is going to be discarded
-            _ = crypt4gh.header.parse(pstream)
-        istream = MultiStreamReader(hstream, pstream)
+        if header_file:
+            hstream = open(header_file, mode="rb")
+            pstream = open(payload_file, mode="rb")
+            if skip_header:
+                logger.info(f"Skipping header of {payload_file}")
+                # This one is going to be discarded
+                for _ in crypt4gh.header.parse(pstream):
+                    pass
+            istream = MultiStreamReader(hstream, pstream)
+        else:
+            istream = open(payload_file, mode="rb")
     except:
         logger.exception(f"Unable to open either header from {header_file} or payload from {payload_file} in order to decrypt the latter")
         return 3
