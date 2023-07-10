@@ -21,7 +21,7 @@ import sys
 from .operations import (
     do_decrypt_payload,
     do_recrypt_header,
-    do_save_header_and_payload,
+    do_save_header_and_payload, do_generate_keypair,
 )
 
 def main():
@@ -35,7 +35,42 @@ def main():
         title="operations",
         description="What to do with the input file, either recrypt or decrypt (or simply getting the header)"
     )
-    
+
+    ap_k = sp.add_parser(
+        "generate-keypair",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        help="Generate Curve25519-based Crypt4GH public/private keypair",
+    )
+
+    ap_k.add_argument(
+        "--private-key",
+        dest="private_key",
+        required=True,
+        help="The private key file to be generated",
+    )
+
+    ap_k.add_argument(
+        "--public-key",
+        dest="public_key",
+        required=True,
+        help="The public key file to be generated",
+    )
+
+    ap_k.add_argument(
+        "--passphrase",
+        dest="passphrase",
+        default=None,
+        help="The passphrase to use for encrypting the private key. "
+             "If the passphrase is empty, the private key will not be encrypted."
+    )
+
+    ap_k.add_argument(
+        "--comment",
+        dest="comment",
+        default=None,
+        help="Optional comment to include in the private key."
+    )
+
     ap_r = sp.add_parser(
         "recrypt",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -89,7 +124,8 @@ def main():
             "--output",
             dest="output_file",
             required=True,
-            help="The output file. Depending on the operation, it can be the reencrypted header, the decrypted contents of the input file or the crypt4gh header from the input file",
+            help="The output file. Depending on the operation, it can be the recrypted header, the "
+                 "decrypted contents of the input file or the crypt4gh header from the input file",
         )
         
     for ap_ in (ap_r, ap_d):
@@ -99,7 +135,14 @@ def main():
             required=True,
             help="The file with the key to open the encrypted header"
         )
-    
+
+        ap_.add_argument(
+            "--decryption-passphrase",
+            dest="passphrase",
+            default=None,
+            help="The passphrase for the decryption key"
+        )
+
     ap.add_argument(
         "--full-help",
         dest="fullHelp",
@@ -134,11 +177,17 @@ def main():
         sys.exit(0)
     
     retval = 1
-    if args.operation == "decrypt":
+    if args.operation == "generate-keypair":
+        retval = do_generate_keypair(args.private_key, args.public_key,
+                                     passphrase=args.passphrase if args.passphrase else None,
+                                     comment=args.comment if args.comment else None)
+    elif args.operation == "decrypt":
         retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file,
-                                    skip_header=args.header_file is not None)
+                                    skip_header=args.header_file is not None,
+                                    decryption_passphrase=args.passphrase if args.passphrase else None)
     elif args.operation == "recrypt":
-        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file)
+        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file,
+                                   decryption_passphrase=args.passphrase if args.passphrase else None)
     elif args.operation == "get-header":
         retval = do_save_header_and_payload(args.input_file, args.output_file, args.payload_file)
     

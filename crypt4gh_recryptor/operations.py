@@ -20,6 +20,7 @@ import io
 import shutil
 import sys
 import logging
+from typing import Optional
 
 import crypt4gh.header
 import crypt4gh.keys
@@ -115,13 +116,30 @@ class MultiStreamReader(io.RawIOBase):
 
 logger = logging.getLogger(__name__)
 
+def do_generate_keypair(private_key: "str", public_key: "str",
+                        passphrase: "Optional[str]", comment: "Optional[str]") -> "int":
+    #print(private_key, public_key)
+
+    def monkeypatched_getpass(prompt: "str") -> "str":
+        return passphrase if passphrase else ''
+
+    crypt4gh.keys.getpass = monkeypatched_getpass
+
+    ret_code = crypt4gh.keys.run(['--sk', private_key, '--pk', public_key]
+                                 + (['-C', comment] if comment else []))
+    if ret_code:
+        logger.exception(f"Unable to generate keypair. Return code from crypt4gh library: {ret_code}")
+        return 1
+    
+    return 0
+
 def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryption_key_file: "str", output_file: "str", sender_key_file: "Optional[str]" = None, skip_header: "bool" = False, decryption_passphrase: "Optional[str]" = None) -> "int":
     try:
         decryption_key = crypt4gh.keys.get_private_key(decryption_key_file, lambda: decryption_passphrase)
     except:
         logger.exception(f"Unable to read decryption key from {decryption_key_file}")
         return 1
-    
+
     if sender_key_file is not None:
         try:
             sender_pub_key = crypt4gh.keys.get_public_key(sender_key_file)
