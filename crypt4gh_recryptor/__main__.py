@@ -134,7 +134,14 @@ def main():
             required=True,
             help="The file with the key to open the encrypted header"
         )
-    
+
+        ap_.add_argument(
+            "--decryption-passphrase",
+            dest="passphrase",
+            default=None,
+            help="The passphrase for the decryption key"
+        )
+
     ap.add_argument(
         "--full-help",
         dest="fullHelp",
@@ -175,9 +182,11 @@ def main():
                                      comment=args.comment if args.comment else None)
     elif args.operation == "decrypt":
         retval = do_decrypt_payload(args.input_file, args.header_file, args.decryption_key, args.output_file,
-                                    skip_header=args.header_file is not None)
+                                    skip_header=args.header_file is not None,
+                                    decryption_passphrase=args.passphrase if args.passphrase else None)
     elif args.operation == "recrypt":
-        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file)
+        retval = do_recrypt_header(args.input_file, args.decryption_key, args.encryption_keys, args.output_file,
+                                   decryption_passphrase=args.passphrase if args.passphrase else None)
     elif args.operation == "get-header":
         retval = do_save_header_and_payload(args.input_file, args.output_file, args.payload_file)
     
