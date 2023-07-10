@@ -137,7 +137,7 @@ def do_decrypt_payload(payload_file: "str", header_file: "Optional[str]", decryp
     except:
         logger.exception(f"Unable to read decryption key from {decryption_key_file}")
         return 1
-    
+
     if sender_key_file is not None:
         try:
             sender_pub_key = crypt4gh.keys.get_public_key(sender_key_file)
@@ -209,7 +209,7 @@ def do_recrypt_stream(istream: "IO[bytes]", decryption_keys: "Sequence[Any]", en
     
     return crypt4gh.header.reencrypt(header_packets, decryption_keys, encryption_keys, trim=False)
 
-def do_save_header_and_payload(input_file: "str", output_file: "str", payload_file: "str" = None) -> "int":
+def do_save_header_and_payload(input_file: "str", output_file: "str", payload_file: "Optional[str]" = None) -> "int":
     try:
         with open(input_file, mode="rb") as iH, open(output_file, mode="wb") as oH:
             do_save_header_stream(iH, oH)
